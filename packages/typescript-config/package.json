@@ -3,7 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
+  "scripts": {
+
+  },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }
