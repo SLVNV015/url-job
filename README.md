@@ -4,6 +4,23 @@
 
 Ccылка на задание: *[ссылка на задание](https://docs.google.com/document/d/19szbENkvcJS5oY0OcwxL6HVwwyAv44EmaIvO_ccKKmQ/edit?tab=t.0)*
 
+## Запуск
+Скопировать репозиторий
+```bash
+git clone git@github.com:SLVNV015/url-job.git
+
+```
+
+### Через Docker (рекомендуется)
+
+```bash
+docker compose up --build
+```
+
+- Frontend: `http://localhost`
+- API: `http://localhost:3000/api`
+- Swagger: `http://localhost:3000/docs`
+
 ## Стек
 
 - **Backend:** NestJS, TypeScript, RxJS (очередь с ограничением конкурентности)
@@ -34,18 +51,6 @@ Ccылка на задание: *[ссылка на задание](https://docs
 │   └── nginx.conf
 └── docker-compose.yml
 ```
-
-## Запуск
-
-### Через Docker (рекомендуется)
-
-```bash
-docker compose up --build
-```
-
-- Frontend: `http://localhost`
-- API: `http://localhost:3000/api`
-- Swagger: `http://localhost:3000/docs`
 
 ## Технические решения и компромиссы
 

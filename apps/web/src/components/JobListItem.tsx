@@ -16,7 +16,6 @@ export function JobListItem({ job }: Props) {
     <button
       type="button"
       onClick={() => {
-        console.log(`Active job changed to ${job.id}`);
         setActive(job.id);
       }}
       className={cn(

@@ -9,7 +9,6 @@ export function JobDetails(): React.ReactElement {
   const detais = useJobsStore((s) => s.activeJobDetaild);
   const cancelActiveJob = useJobsStore((s) => s.cancelJob);
   const isActive = !TERMINAL_STAUTUS.has(detais?.status || "pending");
-  console.log({ activeJobId, detais, isActive });
 
   useJobPolling(activeJobId);
 
