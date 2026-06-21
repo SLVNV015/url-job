@@ -20,6 +20,8 @@ export const statusScema = z.enum([
   "failed",
 ]);
 
+export type JobStatus = z.infer<typeof statusScema>;
+
 export const jobSummarySchema = z.object({
   id: z.string(),
   createdAt: z.iso.datetime().pipe(z.coerce.date()),
@@ -29,9 +31,18 @@ export const jobSummarySchema = z.object({
   errorCount: z.number(),
 });
 
+export const taskStatusSchema = z.enum([
+  "pending",
+  "in_progress",
+  "sucess",
+  "cancelled",
+  "error",
+]);
+export type TaskStatus = z.infer<typeof taskStatusSchema>;
+
 export const taskResultSchema = z.object({
   url: z.string(),
-  status: z.enum(["pending", "in_progress", "sucess", "cancelled", "error"]),
+  status: taskStatusSchema,
   httpStatus: z.number().nullable(),
   errorMessage: z.string().nullable(),
   startedAt: z.iso.datetime().pipe(z.coerce.date()).nullable(),
