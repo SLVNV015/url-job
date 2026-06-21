@@ -17,6 +17,7 @@ import {
   JobCreateResponseApi,
   JobDetailsREsponseApi,
 } from 'src/jobs/domain/dto/dtos';
+import z from 'zod';
 
 @Injectable()
 export class JobsService implements OnModuleDestroy {
@@ -26,8 +27,12 @@ export class JobsService implements OnModuleDestroy {
     private readonly queueService: ConcurrentQueueService<Task, Task>,
     private readonly configService: ConfigService,
   ) {
+    const concurrencyEnv = this.configService.get<number>('CONCURRENCY');
     this.CONCURRENCY_RATE =
-      this.configService.get<number>('CONCURRENCY_RATE') || 5;
+      z.coerce.number().optional().parse(concurrencyEnv) ?? 5;
+    this.logger.debug(
+      `type of CONCURRENCY_RATE: ${typeof this.CONCURRENCY_RATE}`,
+    );
   }
 
   onModuleDestroy() {
@@ -43,6 +48,7 @@ export class JobsService implements OnModuleDestroy {
 
   private readonly logger = new Logger(JobsService.name);
   private CONCURRENCY_RATE: number;
+  private activeCount = 0;
 
   public async createJob(dto: JobCreateDtoApi): Promise<JobCreateResponseApi> {
     const job = new Job(randomUUID(), dto.urls);
@@ -54,10 +60,17 @@ export class JobsService implements OnModuleDestroy {
         job.id,
         job.tasks,
         async (task) => {
+          this.activeCount++;
           this.logger.debug(
-            `Task with id ${task.id} started for url: ${task.url}`,
+            `Task with id ${task.id} started for url: ${task.url} - {${this.CONCURRENCY_RATE}}`,
           );
-          return await this.chekUrlAndDelay(task, job);
+          this.logger.debug(`Active count: ${this.activeCount}`);
+          const result = await this.chekUrlAndDelay(task, job);
+          this.activeCount--;
+          this.logger.debug(
+            `After result - ${result.httpStatus} - active -count${this.activeCount}`,
+          );
+          return result;
         },
         this.CONCURRENCY_RATE,
       )
