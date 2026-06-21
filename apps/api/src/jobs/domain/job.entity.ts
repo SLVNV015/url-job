@@ -64,6 +64,9 @@ export class Job {
   }
 
   public setCompleted(): void {
+    if (this.status !== 'in_progress' && this.status !== 'pending') {
+      return;
+    }
     this._status = 'completed';
   }
 

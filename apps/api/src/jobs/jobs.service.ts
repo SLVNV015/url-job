@@ -68,6 +68,10 @@ export class JobsService implements OnModuleDestroy {
           this.jobsRepository.update(job.id, job);
         },
         complete: async () => {
+          const current = this.jobsRepository.findById(job.id);
+          if (!current) {
+            return;
+          }
           job.setCompleted();
           this.jobsRepository.update(job.id, job);
           this.logger.debug(`Job with id ${job.id} completed`);
@@ -97,7 +101,7 @@ export class JobsService implements OnModuleDestroy {
     if (!job) {
       throw new NotFoundException('Job not found');
     }
-    job.setCompleted();
+    job.setCanceled();
 
     this.queueService.cancel(job.id);
     this.jobsRepository.update(job.id, job);
