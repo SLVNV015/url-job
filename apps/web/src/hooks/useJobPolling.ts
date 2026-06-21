@@ -8,6 +8,7 @@ const POLLING_INTERVAL = 1000;
 export function useJobPolling(jobId: string | null) {
   const setActiveJobDetails = useJobsStore((s) => s.setActiveJobDetails);
   const fetchJobs = useJobsStore((s) => s.fetchJobs);
+  const patchJobInList = useJobsStore((s) => s.patchJobInList);
 
   useEffect(() => {
     if (!jobId) return;
@@ -24,6 +25,7 @@ export function useJobPolling(jobId: string | null) {
         }
 
         setActiveJobDetails(detaids);
+        patchJobInList(detaids);
 
         //если статус завершен, то перестаем поллить
         if (TERMINAL_STAUTUS.has(detaids.status)) {

@@ -17,6 +17,7 @@ interface JobState {
   setActiveJob: (id: string) => void;
   setActiveJobDetails: (job: JobDetails) => void;
   cancelJob: (id: string) => Promise<void>;
+  patchJobInList(job: JobDetails): void;
 }
 
 export const useJobsStore = create<JobState>((set, get) => ({
@@ -71,6 +72,13 @@ export const useJobsStore = create<JobState>((set, get) => ({
     } catch (error) {
       set({ error: toMessage(error) });
     }
+  },
+  patchJobInList(detail: JobDetails) {
+    set((state) => ({
+      jobs: state.jobs.map((job) =>
+        job.id === detail.id ? { ...job, ...detail } : job,
+      ),
+    }));
   },
 }));
 
