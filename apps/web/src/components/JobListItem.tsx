@@ -15,7 +15,10 @@ export function JobListItem({ job }: Props) {
   return (
     <button
       type="button"
-      onClick={() => setActive(job.id)}
+      onClick={() => {
+        console.log(`Active job changed to ${job.id}`);
+        setActive(job.id);
+      }}
       className={cn(
         "flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50",
         isActive
@@ -27,8 +30,8 @@ export function JobListItem({ job }: Props) {
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium text-gray-900">
             {job.id}
-            <StatusBadge status={job.status} size="sm" />
           </span>
+          <StatusBadge status={job.status} size="sm" />
         </div>
         <div className="mt-0.5 text-xs text-gray-500">
           {job.createdAt && formatRelativeTime(job.createdAt.toISOString())}{" "}

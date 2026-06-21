@@ -6,7 +6,7 @@ import { TERMINAL_STAUTUS } from "../lib/status";
 const POLLING_INTERVAL = 1000;
 
 export function useJobPolling(jobId: string | null) {
-  const setActiveJobDetails = useJobsStore((s) => s.setActiveJobDetaild);
+  const setActiveJobDetails = useJobsStore((s) => s.setActiveJobDetails);
   const fetchJobs = useJobsStore((s) => s.fetchJobs);
 
   useEffect(() => {
@@ -38,15 +38,14 @@ export function useJobPolling(jobId: string | null) {
         }
         timeOutID = setTimeout(poll, POLLING_INTERVAL);
       }
+    };
+    poll();
 
-      poll();
-
-      return () => {
-        canceled = true;
-        if (timeOutID) {
-          clearTimeout(timeOutID);
-        }
-      };
+    return () => {
+      canceled = true;
+      if (timeOutID) {
+        clearTimeout(timeOutID);
+      }
     };
   }, [jobId, setActiveJobDetails, fetchJobs]);
 }

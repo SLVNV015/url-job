@@ -15,7 +15,7 @@ interface JobState {
   fetchJobs: () => Promise<void>;
   createJob: (urls: string[]) => Promise<void>;
   setActiveJob: (id: string) => void;
-  setActiveJobDetaild: (job: JobDetails) => void;
+  setActiveJobDetails: (job: JobDetails) => void;
   cancelJob: (id: string) => Promise<void>;
 }
 
@@ -58,7 +58,7 @@ export const useJobsStore = create<JobState>((set, get) => ({
     set({ activeJobId: id, activeJobDetaild: null });
   },
 
-  setActiveJobDetaild: (job: JobDetails) => {
+  setActiveJobDetails: (job: JobDetails) => {
     set({ activeJobDetaild: job });
   },
 

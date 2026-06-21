@@ -9,14 +9,17 @@ const defaultUrls = [
   "https://vk.com",
   "https://ya.ru",
   "https://hubr.com",
+  "https://habr.com",
   "https://youtube.com",
+  "https://nestjs.com",
+  "https://t.me",
 ];
 
 export function JobForm(): React.ReactElement {
   const [text, setText] = React.useState(defaultUrls.join("\n"));
   const createJob = useJobsStore((s) => s.createJob);
   const isSubmitting = useJobsStore((s) => s.isSubitting);
-  const handleSumbit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSumbit = (e: React.SubmitEvent) => {
     e.preventDefault();
     const urls = text
       .split("\n")
@@ -25,7 +28,7 @@ export function JobForm(): React.ReactElement {
     if (urls.length === 0) return;
 
     createJob(urls);
-    setText("");
+    setText(defaultUrls.join("\n"));
   };
 
   return (

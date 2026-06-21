@@ -26,12 +26,15 @@ export function UrlStatusRow({ result }: Props) {
         {result.httpStatus !== null && (
           <span
             className={`font-mono ${result.httpStatus >= 400 ? "text-red-500" : "text-gray-600"}`}
+            title="Статус код запроса"
           >
             {result.httpStatus}
           </span>
         )}
         {result.durationsMs !== null && (
-          <span className="font-mono">{result.durationsMs.toFixed(2)} ms</span>
+          <span className="font-mono" title="Время выполнения">
+            {result.durationsMs.toFixed(2)} ms
+          </span>
         )}
         <StatusBadge status={result.status} size="sm" />
       </div>

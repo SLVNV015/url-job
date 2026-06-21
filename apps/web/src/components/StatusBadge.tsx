@@ -20,9 +20,8 @@ export function StatusBadge({ status, size = "md" }: Props) {
         config.className,
       )}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full ", config.dotClassname)}>
-        {config.label}
-      </span>
+      <span className={cn("h-1.5 w-1.5 rounded-full", config.dotClassname)} />
+      {config.label}
     </span>
   );
 }

@@ -8,11 +8,12 @@ export function JobDetails(): React.ReactElement {
   const activeJobId = useJobsStore((s) => s.activeJobId);
   const detais = useJobsStore((s) => s.activeJobDetaild);
   const cancelActiveJob = useJobsStore((s) => s.cancelJob);
-  const isActive = TERMINAL_STAUTUS.has(detais?.status || "pending");
+  const isActive = !TERMINAL_STAUTUS.has(detais?.status || "pending");
+  console.log({ activeJobId, detais, isActive });
 
   useJobPolling(activeJobId);
 
-  if (!activeJobId) return <></>;
+  if (!activeJobId) return <>Не выбрано активное задание</>;
 
   if (!detais) return <span>Loading...</span>;
 
@@ -20,22 +21,25 @@ export function JobDetails(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between flex-row">
+        <div className="flex items-center justify-around">
           <StatusBadge size="md" status={detais.status} />
           <span className="ml-2 text-sm text-gray-500">
             {done} из {detais.totalUrls} обработано
           </span>
         </div>
         {isActive && (
-          <button className="rounded-lg border border-amber-600 px-3 py-2 text-sm text-gray-900">
+          <button
+            onClick={() => cancelActiveJob(activeJobId)}
+            className="rounded-lg border border-amber-600 px-3 py-2 text-sm text-gray-900"
+          >
             Отменить выполнение задания
           </button>
         )}
       </div>
       <div>
-        {detais.urls.map((u, i) => (
-          <UrlStatusRow key={i} result={u} />
+        {detais.urls.map((u) => (
+          <UrlStatusRow key={u.url} result={u} />
         ))}
       </div>
     </div>
