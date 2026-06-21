@@ -2,7 +2,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/api/dockerfile
     container_name: url-jobs-api
     env_file:
       - .env
@@ -14,3 +14,12 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/dockerfile
+    container_name: url-jobs-web
+    env_file:
+      - .env
+    ports:
+      - "80:80"
