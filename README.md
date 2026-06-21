@@ -1,159 +1,62 @@
-# Turborepo starter
+# Async URL Checker
 
-This Turborepo starter is maintained by the Turborepo core team.
+Сервис асинхронной проверки списка URL. REST API на NestJS + фронтенд на React.
 
-## Using this example
+Ccылка на задание: *[ссылка на задание](https://docs.google.com/document/d/19szbENkvcJS5oY0OcwxL6HVwwyAv44EmaIvO_ccKKmQ/edit?tab=t.0)*
 
-Run the following command:
+## Стек
 
-```sh
-npx create-turbo@latest
+- **Backend:** NestJS, TypeScript, RxJS (очередь с ограничением конкурентности)
+- **Frontend:** React, Vite, Tailwind CSS, Zustand
+- **Shared:** Zod-схемы как единый контракт между FE и BE
+- **Монорепо:** pnpm workspaces
+- **Хранилище:** in-memory (Map), без БД
+
+## Архитектура
+
+- **Монорепо + shared-пакет.** Frontend и backend на одном языке, поэтому контракт API (запросы/ответы) описан один раз через zod-схемы в `packages/schemas` и переиспользуется на обеих сторонах — без дублирования типов и с рантайм-валидацией, а не только compile-time.
+- **Доменные сущности.** Job — класс, а не голый объект с полями. Вся логика, защищающая инварианты (статус job не может рассинхронизироваться со статусами его URL, `cancelled` не может быть перезаписан на `completed`/`failed`), инкапсулирована в методах класса, а не разбросана по сервису.
+- **Очередь на RxJS.** `mergeMap(processor, concurrency)` задаёт лимит параллельных запросов на одну job, `Subject` + `takeUntil` — отмену. Таймаут на уровне очереди не реализован — у неё нет знания о специфике конкретной задачи, таймаут специфичен для HTTP-проверки и живёт в `url-checker`.
+- **Retry с backoff + jitter** реализован через `@nestjs/axios` (`HttpService`) и RxJS-оператор `retry` с кастомной задержкой. Ретраятся только сетевые ошибки/таймауты — ответ сервера с 4xx/5xx не ретраится, это валидный результат проверки, а не сбой.
+- **Frontend** — React + Vite + Zustand + Tailwind, без роутинга (master-detail layout на одном экране, отдельные URL заданиям не нужны ). Сборка раздаётся через nginx, который также проксирует `/api` на backend-контейнер.
+- **Polling** активного задания — раз в секунду до достижения терминального статуса. При смене активного задания запрос по предыдущему игнорируется (race condition guard), список заданий синхронизируется на каждом тике локально, плюс финальный rebuild с сервера при достижении терминального статуса.
+
+## Структура проекта
+
+```
+.
+├── apps/
+│   ├── api/            # NestJS backend
+│   └── web/             # React frontend
+├── packages/
+│   └── schemas/          # Zod-схемы, общие типы
+├── docker/
+│   └── nginx.conf
+└── docker-compose.yml
 ```
 
-## What's inside?
+## Запуск
 
-This Turborepo includes the following packages/apps:
+### Через Docker (рекомендуется)
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```bash
+docker compose up --build
 ```
 
-Without global `turbo`, use your package manager:
+- Frontend: `http://localhost`
+- API: `http://localhost:3000/api`
+- Swagger: `http://localhost:3000/docs`
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
-```
+## Технические решения и компромиссы
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+- **RxJS вместо BullMQ.** Очередь полностью in-memory и не переживает рестарт по условиям задачи — внешний брокер не даёт здесь никакой ценности, только лишнюю инфраструктуру. `mergeMap` с лимитом конкурентности и `takeUntil` для отмены покрывают оба требования (5 параллельно на job, отмена) в несколько строк, без самописного семафора на Promise.
+- **Graceful shutdown.** `onModuleDestroy` в очереди отменяет все активные подписки через тот же `cancel$`, что используется для ручной отмены job. На уровне `JobsService` незавершённые job помечаются как `failed`, так как in-memory хранилище в любом случае не переживёт рестарт процесса.
+- **Поведение при отмене.** Job останавливает взятие новых задач из очереди и помечает все `pending`-URL как `cancelled` сразу. URL, уже находящиеся в обработке (`in_progress`), не прерываются принудительно — Promise в JS нельзя отменить — и дописывают свой реальный результат (`success`/`error`) после завершения запроса.
+- **Отступление от ТЗ:** список заданий (`GET /api/jobs`) и детали (`GET /api/jobs/:id`) используют одну zod-схему вместо раздельных summary/details — для размера проекта разделение не оправдано, оба эндпоинта возвращают полную форму.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Известные ограничения
 
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- Нет персистентности — все данные теряются при рестарте процесса (соответствует условиям задания: БД не требуется).
+- Нет аутентификации и rate-limiting на сам API — вне рамок тестового задания.
+- Нет traceId/requestId и логирования — вне рамок тестового задания. Нет защиты от случайной дедубликации одной и той же job
+- Не покрыто тестами
